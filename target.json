@@ -1,0 +1,9 @@
+{
+  "web": {
+    "standURL": "http://mantisbt-1.2.19/"
+  },
+  "webadmin": {
+    "username": "administrator",
+    "password": "root"
+  }
+}
