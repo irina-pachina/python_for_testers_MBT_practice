@@ -2,6 +2,7 @@
 import pytest
 import json
 import os.path
+import ftputil
 from fixture.application import Application
 
 
@@ -21,19 +22,50 @@ def load_config(config):
     return target
 
 
+@pytest.fixture(scope="session")
+def config(request):
+    return load_config(request.config.getoption("--target"))
+
+
 # in pytest fixture is passed it test functions as parameter
 # this way there is no need in test class, test functions are isolated
 # to declare function as fixture use:
 # fixture initialization
 # this fixture use class Application to work only with browser
 @pytest.fixture
-def app(request):
+def app(request, config):
     global fixture
     browser = request.config.getoption("--browser")
-    web_config = load_config(request.config.getoption("--target"))["web"]
     if fixture is None or not fixture.is_valid():
-        fixture = Application(browser=browser, stand_url=web_config["standURL"])
+        fixture = Application(browser=browser, stand_url=config["web"]["standURL"])
     return fixture
+
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_server(request, config):
+    install_server_configuration(config["ftp"]["host"], config["ftp"]["username"], config["ftp"]["password"])
+
+    def finalizer():
+        restore_server_configuration(config["ftp"]["host"], config["ftp"]["username"], config["ftp"]["password"])
+
+    request.addfinalizer(finalizer)
+
+
+def install_server_configuration(host, username, password):
+    with ftputil.FTPHost(host, username, password) as remote:
+        if remote.path.isfile("config_inc.php.back"):
+            remote.remove("config_inc.php.back")
+        if remote.path.isfile("config_inc.php"):
+            remote.rename("config_inc.php", "config_inc.php.back")
+        remote.upload(os.path.join(os.path.dirname(__file__),"resources/config_inc.php"), "config_inc.php")
+
+
+def restore_server_configuration(host, username, password):
+    with ftputil.FTPHost(host, username, password) as remote:
+        if remote.path.isfile("config_inc.php.back"):
+            if remote.path.isfile("config_inc.php"):
+                remote.remove("config_inc.php")
+            remote.rename("config_inc.php.back", "config_inc.php")
 
 
 # fixture finalization
