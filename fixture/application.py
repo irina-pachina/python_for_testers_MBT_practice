@@ -4,6 +4,7 @@ from fixture.session import SessionHelper
 from fixture.james import JamesHelper
 from fixture.signup import SignupHelper
 from fixture.mail import MailHelper
+from fixture.soap import SoapHelper
 
 
 # class Application represents a complex fixture.
@@ -21,6 +22,7 @@ class Application:
         self.james = JamesHelper(self)
         self.signup = SignupHelper(self)
         self.mail = MailHelper(self)
+        self.soap = SoapHelper(self)
         self.stand_url = config["web"]["standURL"]
         self.config = config
 
